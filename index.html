@@ -112,7 +112,7 @@
                     showImage(base64Data, `Generated image of ${name}`);
                 } else {
                     console.error("No image data received:", result);
-                    showMessage('Es ist ein Fehler aufgetreten. Es wurde kein Bild-Inhalt empfangen.');
+                    showMessage('Leider konnte kein Bild generiert werden. Bitte versuchen Sie es mit einem anderen Namen oder Alter.');
                 }
             } catch (error) {
                 console.error("Image API Error:", error);
