@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meine Erste App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-2xl p-8 space-y-6">
+        <h1 class="text-3xl font-bold text-center text-gray-800">Hallo Welt!</h1>
+        <p class="text-center text-gray-600">
+            Willkommen zu Ihrer ersten Web-App. Geben Sie Ihren Namen ein und klicken Sie auf einen der Buttons.
+        </p>
+
+        <div class="space-y-4">
+            <input type="text" id="nameInput" placeholder="Dein Name"
+                   class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out text-gray-800 placeholder-gray-400">
+            
+            <button id="greetButton"
+                    class="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                Begrüßen
+            </button>
+             <button id="generateInfoButton"
+                    class="w-full px-4 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                Namensinfo generieren ✨
+            </button>
+            <button id="generateImageButton"
+                    class="w-full px-4 py-3 bg-orange-600 text-white font-semibold rounded-lg shadow-md hover:bg-orange-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
+                Bild von Remo erstellen ✨
+            </button>
+             <button id="speakButton"
+                    class="w-full px-4 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                Namen vorlesen lassen ✨
+            </button>
+        </div>
+
+        <div id="messageContainer" class="hidden text-center text-lg font-medium text-gray-700 bg-gray-100 p-4 rounded-lg">
+            <!-- Nachrichten werden hier angezeigt -->
+        </div>
+        <div id="imageContainer" class="hidden text-center text-lg font-medium text-gray-700 bg-gray-100 p-4 rounded-lg">
+            <!-- Image will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        const nameInput = document.getElementById('nameInput');
+        const greetButton = document.getElementById('greetButton');
+        const generateInfoButton = document.getElementById('generateInfoButton');
+        const generateImageButton = document.getElementById('generateImageButton');
+        const speakButton = document.getElementById('speakButton');
+        const messageContainer = document.getElementById('messageContainer');
+        const imageContainer = document.getElementById('imageContainer');
+        let audioPlayer = null;
+
+        // Helper function to show messages with animations
+        function showMessage(text) {
+            imageContainer.classList.add('hidden');
+            messageContainer.textContent = text;
+            messageContainer.classList.remove('hidden', 'animate-shake');
+            messageContainer.classList.add('animate-fadeIn');
+        }
+
+        // Helper function to create a WAV blob from PCM data
+        function pcmToWav(pcm16, sampleRate) {
+            const dataLength = pcm16.length * 2;
+            const buffer = new ArrayBuffer(44 + dataLength);
+            const view = new DataView(buffer);
+
+            // Write WAV header
+            let offset = 0;
+            function writeString(str) {
+                for (let i = 0; i < str.length; i++) {
+                    view.setUint8(offset + i, str.charCodeAt(i));
+                }
+                offset += str.length;
+            }
+            function writeUint32(uint32) {
+                view.setUint32(offset, uint32, true);
+                offset += 4;
+            }
+            function writeUint16(uint16) {
+                view.setUint16(offset, uint16, true);
+                offset += 2;
+            }
+
+            writeString('RIFF');
+            writeUint32(36 + dataLength);
+            writeString('WAVE');
+            writeString('fmt ');
+            writeUint32(16);
+            writeUint16(1); // PCM
+            writeUint16(1); // Mono
+            writeUint32(sampleRate);
+            writeUint32(sampleRate * 2);
+            writeUint16(2); // Block align
+            writeUint16(16); // Bits per sample
+            writeString('data');
+            writeUint32(dataLength);
+
+            // Write PCM data
+            for (let i = 0; i < pcm16.length; i++) {
+                view.setInt16(offset, pcm16[i], true);
+                offset += 2;
+            }
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binaryString = atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        // Event-listener for the "Greet" button
+        greetButton.addEventListener('click', () => {
+            const name = nameInput.value.trim();
+            if (name) {
+                showMessage(`Hallo, ${name}! Schön, Sie kennenzulernen.`);
+            } else {
+                showMessage('Bitte geben Sie einen Namen ein.');
+                messageContainer.classList.add('animate-shake');
+            }
+        });
+
+        // Event-listener for the "Generate Info" button (Gemini text)
+        generateInfoButton.addEventListener('click', async () => {
+            const name = nameInput.value.trim();
+            if (!name) {
+                showMessage('Bitte geben Sie einen Namen ein, um eine Info zu generieren.');
+                messageContainer.classList.add('animate-shake');
+                return;
+            }
+
+            showMessage('Generiere Namensinfo... bitte warten Sie.');
+
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            const prompt = `Gib mir eine kurze, freundliche und kreative Beschreibung der Herkunft oder der Bedeutung des Namens "${name}". Wenn du keine Informationen finden kannst, schreibe etwas Kreatives wie "Der Name klingt nach einer abenteuerlichen Seele". Beschränke deine Antwort auf einen einzigen kurzen Satz.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                tools: [{ "google_search": {} }],
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (text) {
+                    showMessage(text);
+                } else {
+                    showMessage('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.');
+                }
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                showMessage('Fehler beim Abrufen der Namensinfo. Bitte versuchen Sie es später erneut.');
+            }
+        });
+
+        // Event listener for the "Generate Image" button (Gemini image)
+        generateImageButton.addEventListener('click', async () => {
+            const name = nameInput.value.trim();
+            if (!name) {
+                showMessage('Bitte geben Sie einen Namen ein, um ein Bild zu generieren.');
+                messageContainer.classList.add('animate-shake');
+                return;
+            }
+
+            showMessage('Generiere Bild... bitte warten Sie.');
+            imageContainer.classList.add('hidden');
+
+            const prompt = `Create a portrait of a fantasy character named ${name}.`;
+            const payload = { instances: { prompt: prompt }, parameters: { "sampleCount": 1} };
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const base64Data = result?.predictions?.[0]?.bytesBase64Encoded;
+
+                if (base64Data) {
+                    messageContainer.classList.add('hidden');
+                    imageContainer.innerHTML = `<img src="data:image/png;base64,${base64Data}" alt="Generated image of ${name}" class="rounded-lg shadow-md max-w-full h-auto">`;
+                    imageContainer.classList.remove('hidden');
+                } else {
+                    console.error("No image data received:", result);
+                    showMessage('Es ist ein Fehler aufgetreten. Es wurde kein Bild-Inhalt empfangen.');
+                }
+            } catch (error) {
+                console.error("Image API Error:", error);
+                showMessage('Fehler beim Erstellen des Bildes. Bitte versuchen Sie es später erneut.');
+            }
+        });
+
+        // Event-listener for the "Speak Name" button (Gemini TTS)
+        speakButton.addEventListener('click', async () => {
+            const name = nameInput.value.trim();
+            if (!name) {
+                showMessage('Bitte geben Sie einen Namen ein, der vorgelesen werden soll.');
+                messageContainer.classList.add('animate-shake');
+                return;
+            }
+            
+            showMessage('Lade Audio... bitte warten Sie.');
+            imageContainer.classList.add('hidden');
+
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{
+                    parts: [{ text: `Hallo, ${name}! Es ist schön, dich kennenzulernen.` }]
+                }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: {
+                        voiceConfig: {
+                            prebuiltVoiceConfig: { voiceName: "Kore" }
+                        }
+                    }
+                },
+                model: "gemini-2.5-flash-preview-tts"
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const audioData = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType;
+
+                if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                    const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const pcm16 = new Int16Array(pcmData);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+
+                    audioPlayer = new Audio(audioUrl);
+                    audioPlayer.play().catch(e => console.error("Audio playback failed:", e));
+                    
+                    showMessage(`Spiele Audio für ${name} ab.`);
+                } else {
+                    console.error("No audio data received:", result);
+                    showMessage('Es ist ein Fehler aufgetreten. Es wurde kein Audio-Inhalt empfangen.');
+                }
+
+            } catch (error) {
+                console.error("TTS API Error:", error);
+                showMessage('Fehler beim Abrufen von Audio. Bitte versuchen Sie es später erneut.');
+            }
+        });
+
+        // Additional animations
+        const styleSheet = document.createElement("style");
+        styleSheet.type = "text/css";
+        styleSheet.innerText = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fadeIn {
+                animation: fadeIn 0.5s ease-out forwards;
+            }
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                20%, 60% { transform: translateX(-5px); }
+                40%, 80% { transform: translateX(5px); }
+            }
+            .animate-shake {
+                animation: shake 0.4s ease-in-out;
+            }
+        `;
+        document.head.appendChild(styleSheet);
+    </script>
+</body>
+</html>
