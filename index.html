@@ -17,34 +17,56 @@
     <div class="w-full max-w-md bg-white rounded-xl shadow-2xl p-8 space-y-6">
         <h1 class="text-3xl font-bold text-center text-gray-800">Hallo Welt!</h1>
         <p class="text-center text-gray-600">
-            Willkommen zu Ihrer ersten Web-App. Geben Sie Ihren Namen ein und klicken Sie auf den Button.
+            Willkommen zu Ihrer ersten Web-App. Geben Sie Ihren Namen und Ihr Alter ein und klicken Sie auf einen der Buttons.
         </p>
 
         <div class="space-y-4">
             <input type="text" id="nameInput" placeholder="Dein Name"
                    class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out text-gray-800 placeholder-gray-400">
             
+            <input type="number" id="ageInput" placeholder="Dein Alter"
+                   class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out text-gray-800 placeholder-gray-400">
+
             <button id="greetButton"
                     class="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                 Begrüßen
+            </button>
+
+            <button id="generateImageButton"
+                    class="w-full px-4 py-3 bg-orange-600 text-white font-semibold rounded-lg shadow-md hover:bg-orange-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
+                Bild erstellen ✨
             </button>
         </div>
 
         <div id="messageContainer" class="hidden text-center text-lg font-medium text-gray-700 bg-gray-100 p-4 rounded-lg">
             <!-- Nachrichten werden hier angezeigt -->
         </div>
+        <div id="imageContainer" class="hidden text-center text-lg font-medium text-gray-700 bg-gray-100 p-4 rounded-lg">
+            <!-- Image will be displayed here -->
+        </div>
     </div>
 
     <script>
         const nameInput = document.getElementById('nameInput');
+        const ageInput = document.getElementById('ageInput');
         const greetButton = document.getElementById('greetButton');
+        const generateImageButton = document.getElementById('generateImageButton');
         const messageContainer = document.getElementById('messageContainer');
+        const imageContainer = document.getElementById('imageContainer');
 
         // Helper function to show messages with animations
         function showMessage(text) {
+            imageContainer.classList.add('hidden');
             messageContainer.textContent = text;
             messageContainer.classList.remove('hidden', 'animate-shake');
             messageContainer.classList.add('animate-fadeIn');
+        }
+
+        // Helper function to show an image
+        function showImage(base64Data, altText) {
+            messageContainer.classList.add('hidden');
+            imageContainer.innerHTML = `<img src="data:image/png;base64,${base64Data}" alt="${altText}" class="rounded-lg shadow-md max-w-full h-auto">`;
+            imageContainer.classList.remove('hidden');
         }
 
         // Event-listener for the "Greet" button
@@ -55,6 +77,46 @@
             } else {
                 showMessage('Bitte geben Sie einen Namen ein.');
                 messageContainer.classList.add('animate-shake');
+            }
+        });
+
+        // Event-listener for the "Generate Image" button (Gemini image)
+        generateImageButton.addEventListener('click', async () => {
+            const name = nameInput.value.trim();
+            const age = ageInput.value.trim();
+            
+            if (!name || !age) {
+                showMessage('Bitte geben Sie einen Namen und ein Alter ein, um ein Bild zu generieren.');
+                messageContainer.classList.add('animate-shake');
+                return;
+            }
+
+            showMessage('Generiere Bild... bitte warten Sie.');
+
+            const prompt = `Create a whimsical fantasy portrait of a character named ${name}, who is ${age} years old.`;
+            const payload = { instances: { prompt: prompt }, parameters: { "sampleCount": 1} };
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const base64Data = result?.predictions?.[0]?.bytesBase64Encoded;
+
+                if (base64Data) {
+                    showImage(base64Data, `Generated image of ${name}`);
+                } else {
+                    console.error("No image data received:", result);
+                    showMessage('Es ist ein Fehler aufgetreten. Es wurde kein Bild-Inhalt empfangen.');
+                }
+            } catch (error) {
+                console.error("Image API Error:", error);
+                showMessage('Fehler beim Erstellen des Bildes. Bitte versuchen Sie es später erneut.');
             }
         });
 
