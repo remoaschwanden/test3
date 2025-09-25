@@ -17,23 +17,7 @@
 
     <!-- Hauptseite -->
     <div id="mainPage" class="w-full max-w-md bg-white rounded-xl shadow-2xl p-8 space-y-6">
-        <h1 class="text-3xl font-bold text-center text-gray-800">Hallo Welt!</h1>
-        <p class="text-center text-gray-600">
-            Willkommen zu Ihrer ersten Web-App. Geben Sie Ihren Namen und Ihr Alter ein und klicken Sie auf einen der Buttons.
-        </p>
-
         <div class="space-y-4">
-            <input type="text" id="nameInput" placeholder="Dein Name"
-                   class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out text-gray-800 placeholder-gray-400">
-            
-            <input type="number" id="ageInput" placeholder="Dein Alter"
-                   class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out text-gray-800 placeholder-gray-400">
-
-            <button id="greetButton"
-                    class="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                Begrüßen
-            </button>
-            
             <button id="goToSecondPageButton"
                     class="w-full px-4 py-3 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                 Gehe zu Seite 2
@@ -43,13 +27,6 @@
                     class="w-full px-4 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
                 Stempeluhr
             </button>
-        </div>
-
-        <div id="messageContainer" class="hidden text-center text-lg font-medium text-gray-700 bg-gray-100 p-4 rounded-lg">
-            <!-- Nachrichten werden hier angezeigt -->
-        </div>
-        <div id="imageContainer" class="hidden text-center text-lg font-medium text-gray-700 bg-gray-100 p-4 rounded-lg">
-            <!-- Bild wird hier angezeigt -->
         </div>
     </div>
 
@@ -184,12 +161,6 @@
         let db, auth, userId;
 
         // --- DOM-Elemente ---
-        const nameInput = document.getElementById('nameInput');
-        const ageInput = document.getElementById('ageInput');
-        const greetButton = document.getElementById('greetButton');
-        const messageContainer = document.getElementById('messageContainer');
-        const imageContainer = document.getElementById('imageContainer');
-
         const mainPage = document.getElementById('mainPage');
         const secondPage = document.getElementById('secondPage');
         const goToSecondPageButton = document.getElementById('goToSecondPageButton');
@@ -336,14 +307,6 @@
             } else {
                 summaryDisplay.classList.add('hidden');
             }
-        }
-
-        // Hilfsfunktion zur Anzeige von Nachrichten auf der Hauptseite
-        function showMessage(text) {
-            imageContainer.classList.add('hidden');
-            messageContainer.textContent = text;
-            messageContainer.classList.remove('hidden', 'animate-shake');
-            messageContainer.classList.add('animate-fadeIn');
         }
 
         // Hilfsfunktion zur Anzeige von Nachrichten auf der Stempeluhr-Seite
@@ -514,17 +477,6 @@
         endWorkButton.addEventListener('click', () => recordAction('Feierabend'));
         exportExcelButton.addEventListener('click', () => exportToExcel());
 
-        // Begrüßen-Button
-        greetButton.addEventListener('click', () => {
-            const name = nameInput.value.trim();
-            if (name) {
-                showMessage(`Hallo, ${name}! Schön, Sie kennenzulernen.`);
-            } else {
-                showMessage('Bitte geben Sie einen Namen ein.');
-                messageContainer.classList.add('animate-shake');
-            }
-        });
-
         // Bild-Upload und Bearbeitung
         imageUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
@@ -599,28 +551,6 @@
             document.body.removeChild(link);
             showSecondPageMessage('Bild wurde gespeichert.');
         });
-
-        // Zusätzliche Animationen
-        const styleSheet = document.createElement("style");
-        styleSheet.type = "text/css";
-        styleSheet.innerText = `
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(-10px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-            .animate-fadeIn {
-                animation: fadeIn 0.5s ease-out forwards;
-            }
-            @keyframes shake {
-                0%, 100% { transform: translateX(0); }
-                20%, 60% { transform: translateX(-5px); }
-                40%, 80% { transform: translateX(5px); }
-            }
-            .animate-shake {
-                animation: shake 0.4s ease-in-out;
-            }
-        `;
-        document.head.appendChild(styleSheet);
     </script>
 </body>
 </html>
