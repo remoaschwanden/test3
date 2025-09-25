@@ -85,7 +85,9 @@
             </button>
         </div>
 
-        <p id="secondPageMessageContainer" class="text-center text-sm text-gray-500"></p>
+        <div id="secondPageMessageContainer" class="hidden text-center text-lg font-medium text-gray-700 bg-gray-100 p-4 rounded-lg mt-4">
+            <!-- Nachrichten werden hier angezeigt -->
+        </div>
 
         <button id="backToMainButton"
                 class="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mt-6">
@@ -353,6 +355,7 @@
         // Hilfsfunktion zur Anzeige von Nachrichten auf der zweiten Seite
         function showSecondPageMessage(text) {
             secondPageMessageContainer.textContent = text;
+            secondPageMessageContainer.classList.remove('hidden');
         }
 
         // --- Stempeluhr-Funktionen ---
@@ -558,7 +561,7 @@
 
                 ctx.putImageData(imageData, 0, 0);
                 uploadedImage.src = canvas.toDataURL('image/png');
-                showSecondPageMessage('');
+                showSecondPageMessage('Bearbeitung abgeschlossen!');
             };
             img.src = uploadedImage.src;
         }
