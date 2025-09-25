@@ -14,7 +14,9 @@
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
-    <div class="w-full max-w-md bg-white rounded-xl shadow-2xl p-8 space-y-6">
+
+    <!-- Hauptseite -->
+    <div id="mainPage" class="w-full max-w-md bg-white rounded-xl shadow-2xl p-8 space-y-6">
         <h1 class="text-3xl font-bold text-center text-gray-800">Hallo Welt!</h1>
         <p class="text-center text-gray-600">
             Willkommen zu Ihrer ersten Web-App. Geben Sie Ihren Namen und Ihr Alter ein und klicken Sie auf einen der Buttons.
@@ -36,14 +38,32 @@
                     class="w-full px-4 py-3 bg-orange-600 text-white font-semibold rounded-lg shadow-md hover:bg-orange-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
                 Bild erstellen ✨
             </button>
+            
+            <button id="goToSecondPageButton"
+                    class="w-full px-4 py-3 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                Gehe zu Seite 2
+            </button>
         </div>
 
         <div id="messageContainer" class="hidden text-center text-lg font-medium text-gray-700 bg-gray-100 p-4 rounded-lg">
             <!-- Nachrichten werden hier angezeigt -->
         </div>
         <div id="imageContainer" class="hidden text-center text-lg font-medium text-gray-700 bg-gray-100 p-4 rounded-lg">
-            <!-- Image will be displayed here -->
+            <!-- Bild wird hier angezeigt -->
         </div>
+    </div>
+
+    <!-- Zweite Seite (initially hidden) -->
+    <div id="secondPage" class="hidden w-full max-w-md bg-white rounded-xl shadow-2xl p-8 space-y-6">
+        <h1 class="text-3xl font-bold text-center text-gray-800">Willkommen auf Seite 2!</h1>
+        <p class="text-center text-gray-600">
+            Dies ist die zweite Seite Ihrer App.
+        </p>
+
+        <button id="backToMainButton"
+                class="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+            Zurück zur Hauptseite
+        </button>
     </div>
 
     <script>
@@ -54,7 +74,12 @@
         const messageContainer = document.getElementById('messageContainer');
         const imageContainer = document.getElementById('imageContainer');
 
-        // Helper function to show messages with animations
+        const mainPage = document.getElementById('mainPage');
+        const secondPage = document.getElementById('secondPage');
+        const goToSecondPageButton = document.getElementById('goToSecondPageButton');
+        const backToMainButton = document.getElementById('backToMainButton');
+
+        // Hilfsfunktion zur Anzeige von Nachrichten mit Animationen
         function showMessage(text) {
             imageContainer.classList.add('hidden');
             messageContainer.textContent = text;
@@ -62,14 +87,14 @@
             messageContainer.classList.add('animate-fadeIn');
         }
 
-        // Helper function to show an image
+        // Hilfsfunktion zur Anzeige eines Bildes
         function showImage(base64Data, altText) {
             messageContainer.classList.add('hidden');
             imageContainer.innerHTML = `<img src="data:image/png;base64,${base64Data}" alt="${altText}" class="rounded-lg shadow-md max-w-full h-auto">`;
             imageContainer.classList.remove('hidden');
         }
 
-        // Event-listener for the "Greet" button
+        // Event-Listener für den "Begrüßen"-Button
         greetButton.addEventListener('click', () => {
             const name = nameInput.value.trim();
             if (name) {
@@ -80,7 +105,7 @@
             }
         });
 
-        // Event-listener for the "Generate Image" button (Gemini image)
+        // Event-Listener für den "Bild erstellen"-Button (Gemini image)
         generateImageButton.addEventListener('click', async () => {
             const name = nameInput.value.trim();
             const age = ageInput.value.trim();
@@ -120,7 +145,18 @@
             }
         });
 
-        // Additional animations
+        // Event-Listener für die Navigation
+        goToSecondPageButton.addEventListener('click', () => {
+            mainPage.classList.add('hidden');
+            secondPage.classList.remove('hidden');
+        });
+
+        backToMainButton.addEventListener('click', () => {
+            secondPage.classList.add('hidden');
+            mainPage.classList.remove('hidden');
+        });
+
+        // Zusätzliche Animationen
         const styleSheet = document.createElement("style");
         styleSheet.type = "text/css";
         styleSheet.innerText = `
