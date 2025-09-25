@@ -476,19 +476,18 @@
         goToSecondPageButton.addEventListener('click', () => {
             mainPage.classList.add('hidden');
             secondPage.classList.remove('hidden');
-            uploadedImageContainer.classList.add('hidden');
-            showSecondPageMessage('');
-        });
-
-        backToMainButton.addEventListener('click', () => {
-            secondPage.classList.add('hidden');
-            mainPage.classList.remove('hidden');
+            timeClockPage.classList.add('hidden');
         });
 
         goToTimeClockButton.addEventListener('click', () => {
             mainPage.classList.add('hidden');
             timeClockPage.classList.remove('hidden');
-            showTimeClockMessage('');
+            secondPage.classList.add('hidden');
+        });
+
+        backToMainButton.addEventListener('click', () => {
+            secondPage.classList.add('hidden');
+            mainPage.classList.remove('hidden');
         });
 
         backFromTimeClockButton.addEventListener('click', () => {
