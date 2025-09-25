@@ -33,15 +33,15 @@
                     class="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                 Begrüßen
             </button>
-
-            <button id="generateImageButton"
-                    class="w-full px-4 py-3 bg-orange-600 text-white font-semibold rounded-lg shadow-md hover:bg-orange-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
-                Bild erstellen ✨
-            </button>
             
             <button id="goToSecondPageButton"
                     class="w-full px-4 py-3 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                 Gehe zu Seite 2
+            </button>
+
+            <button id="goToTimeClockButton"
+                    class="w-full px-4 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                Stempeluhr
             </button>
         </div>
 
@@ -93,11 +93,98 @@
         </button>
     </div>
 
-    <script>
+    <!-- Stempeluhr-Seite (initially hidden) -->
+    <div id="timeClockPage" class="hidden w-full max-w-md bg-white rounded-xl shadow-2xl p-8 space-y-6">
+        <h1 class="text-3xl font-bold text-center text-gray-800">Stempeluhr</h1>
+        <p class="text-center text-gray-600">
+            Erfassen Sie Ihre Arbeitszeiten. Ihre Daten werden sicher gespeichert.
+        </p>
+
+        <div class="text-center text-sm text-gray-500">
+            Ihre Benutzer-ID: <span id="userIdDisplay" class="font-bold text-gray-700">Lade...</span>
+        </div>
+
+        <div class="space-y-4">
+            <button id="startWorkButton"
+                    class="w-full px-4 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                Arbeitsbeginn
+            </button>
+
+            <input type="text" id="taskInput" placeholder="Neuer Auftrag (optional)"
+                   class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out text-gray-800 placeholder-gray-400">
+            <button id="newTaskButton"
+                    class="w-full px-4 py-3 bg-orange-500 text-white font-semibold rounded-lg shadow-md hover:bg-orange-600 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
+                Neuer Auftrag
+            </button>
+
+            <button id="pauseButton"
+                    class="w-full px-4 py-3 bg-yellow-500 text-gray-800 font-semibold rounded-lg shadow-md hover:bg-yellow-600 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2">
+                Pause
+            </button>
+            
+            <button id="nonBillableButton"
+                    class="w-full px-4 py-3 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                Nicht verrechenbar
+            </button>
+
+            <button id="endWorkButton"
+                    class="w-full px-4 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                Feierabend
+            </button>
+
+            <button id="exportExcelButton"
+                    class="w-full px-4 py-3 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                Export als Excel
+            </button>
+        </div>
+
+        <div id="timeClockMessage" class="hidden text-center text-sm font-medium text-gray-700 bg-gray-100 p-4 rounded-lg">
+            <!-- Nachrichten werden hier angezeigt -->
+        </div>
+        
+        <!-- Container für die Echtzeit-Anzeige der Einträge -->
+        <div id="entriesDisplay" class="mt-6 hidden space-y-2 text-gray-700">
+            <h2 class="text-xl font-bold text-center">Erfasste Einträge</h2>
+            <div id="entriesList" class="space-y-2">
+                <!-- Einträge werden hier dynamisch eingefügt -->
+            </div>
+        </div>
+
+        <!-- Zusammenfassung der Arbeitszeit -->
+        <div id="summaryDisplay" class="mt-6 hidden space-y-2 text-gray-700">
+            <h2 class="text-xl font-bold text-center">Zusammenfassung der Arbeitszeit</h2>
+            <div id="summaryList" class="space-y-2">
+                <!-- Zusammenfassung wird hier dynamisch eingefügt -->
+            </div>
+        </div>
+
+        <button id="backFromTimeClockButton"
+                class="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mt-6">
+            Zurück zur Hauptseite
+        </button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, onSnapshot, collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Firestore-Protokollierung aktivieren
+        setLogLevel('debug');
+        
+        // Globale Firebase-Variablen, die vom System bereitgestellt werden
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Firestore- und Authentifizierungsinstanzen
+        let db, auth, userId;
+
+        // --- DOM-Elemente ---
         const nameInput = document.getElementById('nameInput');
         const ageInput = document.getElementById('ageInput');
         const greetButton = document.getElementById('greetButton');
-        const generateImageButton = document.getElementById('generateImageButton');
         const messageContainer = document.getElementById('messageContainer');
         const imageContainer = document.getElementById('imageContainer');
 
@@ -105,8 +192,28 @@
         const secondPage = document.getElementById('secondPage');
         const goToSecondPageButton = document.getElementById('goToSecondPageButton');
         const backToMainButton = document.getElementById('backToMainButton');
+        const goToTimeClockButton = document.getElementById('goToTimeClockButton');
+
+        // Elemente der Stempeluhr-Seite
+        const timeClockPage = document.getElementById('timeClockPage');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const startWorkButton = document.getElementById('startWorkButton');
+        const newTaskButton = document.getElementById('newTaskButton');
+        const taskInput = document.getElementById('taskInput');
+        const pauseButton = document.getElementById('pauseButton');
+        const nonBillableButton = document.getElementById('nonBillableButton');
+        const endWorkButton = document.getElementById('endWorkButton');
+        const exportExcelButton = document.getElementById('exportExcelButton');
+        const timeClockMessage = document.getElementById('timeClockMessage');
+        const backFromTimeClockButton = document.getElementById('backFromTimeClockButton');
+
+        // Elemente der neuen Anzeige
+        const entriesDisplay = document.getElementById('entriesDisplay');
+        const entriesList = document.getElementById('entriesList');
+        const summaryDisplay = document.getElementById('summaryDisplay');
+        const summaryList = document.getElementById('summaryList');
         
-        // Neue Elemente für das Hochladen und Bearbeiten von Bildern
+        // Elemente für das Hochladen und Bearbeiten von Bildern
         const imageUpload = document.getElementById('imageUpload');
         const uploadedImageContainer = document.getElementById('uploadedImageContainer');
         const uploadedImage = document.getElementById('uploadedImage');
@@ -115,7 +222,121 @@
         const blackAndWhiteButton = document.getElementById('blackAndWhiteButton');
         const saveImageButton = document.getElementById('saveImageButton');
 
-        // Hilfsfunktion zur Anzeige von Nachrichten mit Animationen
+        // Zustandsvariable für den Pause-Button
+        let isPaused = false;
+
+        // Firestore-Initialisierung und Authentifizierung
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                userIdDisplay.textContent = userId;
+
+                // Echtzeit-Listener für die Stempeluhr-Einträge
+                const collectionPath = `artifacts/${appId}/users/${userId}/time_clock_entries`;
+                const q = query(collection(db, collectionPath));
+                
+                onSnapshot(q, (querySnapshot) => {
+                    const entries = [];
+                    querySnapshot.forEach((doc) => {
+                        entries.push(doc.data());
+                    });
+                    
+                    // Daten nach Zeitstempel sortieren
+                    entries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                    entriesList.innerHTML = ''; // Vorherige Einträge löschen
+                    if (entries.length > 0) {
+                        entriesDisplay.classList.remove('hidden');
+                        entries.forEach(entry => {
+                            const entryItem = document.createElement('div');
+                            entryItem.className = 'p-3 bg-gray-100 rounded-lg shadow-sm flex justify-between items-center';
+                            const date = new Date(entry.timestamp);
+                            const formattedDate = date.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                            const formattedTime = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+                            
+                            let descriptionText = entry.description ? ` (${entry.description})` : '';
+
+                            entryItem.innerHTML = `
+                                <div>
+                                    <p class="font-semibold">${entry.action}</p>
+                                    <p class="text-xs text-gray-500">${descriptionText}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm">${formattedDate}</p>
+                                    <p class="text-xs text-gray-500">${formattedTime}</p>
+                                </div>
+                            `;
+                            entriesList.appendChild(entryItem);
+                        });
+                        calculateAndDisplaySummary(entries);
+                    } else {
+                        entriesDisplay.classList.add('hidden');
+                        summaryDisplay.classList.add('hidden');
+                        showTimeClockMessage('Noch keine Einträge vorhanden.');
+                    }
+                }, (error) => {
+                    console.error("Fehler beim Abrufen der Einträge: ", error);
+                    showTimeClockMessage('Fehler beim Laden der Einträge.');
+                });
+
+            } else {
+                // Bei anonymer Anmeldung
+                await signInAnonymously(auth);
+            }
+        });
+
+        // Funktion zum Berechnen und Anzeigen der Arbeitszeitzusammenfassung
+        function calculateAndDisplaySummary(entries) {
+            const taskSummary = {};
+            let startTime = null;
+            let currentTaskDescription = null;
+
+            entries.forEach(entry => {
+                if (entry.action === 'Arbeitsbeginn' || entry.action === 'Weiter machen') {
+                    startTime = new Date(entry.timestamp);
+                    currentTaskDescription = entry.description || 'Allgemeine Arbeit';
+                } else if ((entry.action === 'Pause' || entry.action === 'Feierabend' || entry.action === 'Nicht verrechenbar') && startTime) {
+                    const endTime = new Date(entry.timestamp);
+                    const duration = endTime.getTime() - startTime.getTime();
+                    taskSummary[currentTaskDescription] = (taskSummary[currentTaskDescription] || 0) + duration;
+                    startTime = null;
+                    currentTaskDescription = null;
+                }
+            });
+
+            // Falls die Arbeitszeit noch läuft
+            if (startTime) {
+                const duration = new Date().getTime() - startTime.getTime();
+                taskSummary[currentTaskDescription] = (taskSummary[currentTaskDescription] || 0) + duration;
+            }
+
+            summaryList.innerHTML = ''; // Vorherige Zusammenfassung löschen
+            if (Object.keys(taskSummary).length > 0) {
+                summaryDisplay.classList.remove('hidden');
+                for (const task in taskSummary) {
+                    const totalDurationInSeconds = Math.floor(taskSummary[task] / 1000);
+                    const hours = Math.floor(totalDurationInSeconds / 3600);
+                    const minutes = Math.floor((totalDurationInSeconds % 3600) / 60);
+                    const seconds = totalDurationInSeconds % 60;
+                    
+                    const summaryItem = document.createElement('div');
+                    summaryItem.className = 'p-3 bg-gray-100 rounded-lg shadow-sm flex justify-between items-center';
+                    summaryItem.innerHTML = `
+                        <p class="font-semibold">${task}</p>
+                        <p class="text-sm">${hours}h ${minutes}m ${seconds}s</p>
+                    `;
+                    summaryList.appendChild(summaryItem);
+                }
+            } else {
+                summaryDisplay.classList.add('hidden');
+            }
+        }
+
+        // Hilfsfunktion zur Anzeige von Nachrichten auf der Hauptseite
         function showMessage(text) {
             imageContainer.classList.add('hidden');
             messageContainer.textContent = text;
@@ -123,11 +344,10 @@
             messageContainer.classList.add('animate-fadeIn');
         }
 
-        // Hilfsfunktion zur Anzeige eines Bildes
-        function showImage(base64Data, altText) {
-            messageContainer.classList.add('hidden');
-            imageContainer.innerHTML = `<img src="data:image/png;base64,${base64Data}" alt="${altText}" class="rounded-lg shadow-md max-w-full h-auto">`;
-            imageContainer.classList.remove('hidden');
+        // Hilfsfunktion zur Anzeige von Nachrichten auf der Stempeluhr-Seite
+        function showTimeClockMessage(text) {
+            timeClockMessage.textContent = text;
+            timeClockMessage.classList.remove('hidden');
         }
 
         // Hilfsfunktion zur Anzeige von Nachrichten auf der zweiten Seite
@@ -135,7 +355,164 @@
             secondPageMessageContainer.textContent = text;
         }
 
-        // Event-Listener für den "Begrüßen"-Button
+        // --- Stempeluhr-Funktionen ---
+        async function recordAction(action) {
+            if (!userId) {
+                showTimeClockMessage('Authentifizierung wird geladen, bitte warten Sie...');
+                return;
+            }
+
+            let description = '';
+            if (action === 'Neuer Auftrag') {
+                description = taskInput.value.trim();
+                if (!description) {
+                    showTimeClockMessage('Bitte geben Sie eine Auftragsbeschreibung ein.');
+                    return;
+                }
+            } else if (action === 'Arbeitsbeginn' || action === 'Pause' || action === 'Weiter machen' || action === 'Feierabend' || action === 'Nicht verrechenbar') {
+                description = taskInput.value.trim() || 'Allgemeine Arbeit';
+            }
+
+            try {
+                // Pfad für die private Datenspeicherung
+                const collectionPath = `artifacts/${appId}/users/${userId}/time_clock_entries`;
+                await addDoc(collection(db, collectionPath), {
+                    action: action,
+                    description: description,
+                    timestamp: new Date().toISOString()
+                });
+                showTimeClockMessage(`Aktion "${action}" erfolgreich gespeichert.`);
+            } catch (e) {
+                console.error("Fehler beim Hinzufügen des Dokuments: ", e);
+                showTimeClockMessage('Fehler beim Speichern der Aktion.');
+            }
+        }
+
+        async function exportToExcel() {
+            if (!userId) {
+                showTimeClockMessage('Authentifizierung wird geladen, bitte warten Sie...');
+                return;
+            }
+            showTimeClockMessage('Daten werden für den Export vorbereitet...');
+
+            try {
+                const collectionPath = `artifacts/${appId}/users/${userId}/time_clock_entries`;
+                const querySnapshot = await getDocs(collection(db, collectionPath));
+                
+                const entries = [];
+                querySnapshot.forEach((doc) => {
+                    entries.push(doc.data());
+                });
+
+                if (entries.length === 0) {
+                    showTimeClockMessage('Keine Daten zum Exportieren vorhanden.');
+                    return;
+                }
+
+                // Daten nach Zeitstempel sortieren
+                entries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                let csvContent = "Zeitstempel;Aktion;Beschreibung\n";
+                entries.forEach(entry => {
+                    const row = `"${entry.timestamp}";"${entry.action}";"${entry.description}"\n`;
+                    csvContent += row;
+                });
+
+                // Arbeitszeit pro Auftrag berechnen
+                const taskSummary = {};
+                let startTime = null;
+                let currentTaskDescription = null;
+
+                entries.forEach(entry => {
+                    if (entry.action === 'Arbeitsbeginn' || entry.action === 'Weiter machen') {
+                        startTime = new Date(entry.timestamp);
+                        currentTaskDescription = entry.description || 'Allgemeine Arbeit';
+                    } else if ((entry.action === 'Pause' || entry.action === 'Feierabend' || entry.action === 'Nicht verrechenbar') && startTime) {
+                        const endTime = new Date(entry.timestamp);
+                        const duration = endTime.getTime() - startTime.getTime();
+                        taskSummary[currentTaskDescription] = (taskSummary[currentTaskDescription] || 0) + duration;
+                        startTime = null;
+                        currentTaskDescription = null;
+                    }
+                });
+
+                // Formatierung der Zusammenfassung hinzufügen
+                csvContent += "\n\nZusammenfassung der Arbeitszeit\n";
+                csvContent += "Auftrag;Gesamtdauer\n";
+
+                for (const task in taskSummary) {
+                    const totalDurationInSeconds = Math.floor(taskSummary[task] / 1000);
+                    const hours = Math.floor(totalDurationInSeconds / 3600);
+                    const minutes = Math.floor((totalDurationInSeconds % 3600) / 60);
+                    const seconds = totalDurationInSeconds % 60;
+                    
+                    const durationString = `${hours}h ${minutes}m ${seconds}s`;
+                    csvContent += `"${task}";"${durationString}"\n`;
+                }
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "arbeitszeiten.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                showTimeClockMessage('Daten erfolgreich exportiert!');
+
+            } catch (e) {
+                console.error("Fehler beim Exportieren: ", e);
+                showTimeClockMessage('Fehler beim Exportieren der Daten.');
+            }
+        }
+
+        // --- Event-Listener ---
+        // Navigation zwischen den Seiten
+        goToSecondPageButton.addEventListener('click', () => {
+            mainPage.classList.add('hidden');
+            secondPage.classList.remove('hidden');
+            uploadedImageContainer.classList.add('hidden');
+            showSecondPageMessage('');
+        });
+
+        backToMainButton.addEventListener('click', () => {
+            secondPage.classList.add('hidden');
+            mainPage.classList.remove('hidden');
+        });
+
+        goToTimeClockButton.addEventListener('click', () => {
+            mainPage.classList.add('hidden');
+            timeClockPage.classList.remove('hidden');
+            showTimeClockMessage('');
+        });
+
+        backFromTimeClockButton.addEventListener('click', () => {
+            timeClockPage.classList.add('hidden');
+            mainPage.classList.remove('hidden');
+        });
+
+        // Stempeluhr-Buttons
+        startWorkButton.addEventListener('click', () => recordAction('Arbeitsbeginn'));
+        newTaskButton.addEventListener('click', () => recordAction('Neuer Auftrag'));
+        
+        pauseButton.addEventListener('click', () => {
+            if (isPaused) {
+                recordAction('Weiter machen');
+                pauseButton.textContent = 'Pause';
+            } else {
+                recordAction('Pause');
+                pauseButton.textContent = 'Weiter machen';
+            }
+            isPaused = !isPaused;
+        });
+
+        nonBillableButton.addEventListener('click', () => recordAction('Nicht verrechenbar'));
+        endWorkButton.addEventListener('click', () => recordAction('Feierabend'));
+        exportExcelButton.addEventListener('click', () => exportToExcel());
+
+        // Begrüßen-Button
         greetButton.addEventListener('click', () => {
             const name = nameInput.value.trim();
             if (name) {
@@ -146,60 +523,7 @@
             }
         });
 
-        // Event-Listener für den "Bild erstellen"-Button (Gemini image)
-        generateImageButton.addEventListener('click', async () => {
-            const name = nameInput.value.trim();
-            const age = ageInput.value.trim();
-            
-            if (!name || !age) {
-                showMessage('Bitte geben Sie einen Namen und ein Alter ein, um ein Bild zu generieren.');
-                messageContainer.classList.add('animate-shake');
-                return;
-            }
-
-            showMessage('Generiere Bild... bitte warten Sie.');
-
-            const prompt = `Create a whimsical fantasy portrait of a character named ${name}, who is ${age} years old.`;
-            const payload = { instances: { prompt: prompt }, parameters: { "sampleCount": 1} };
-            const apiKey = ""; 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
-            
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-                const base64Data = result?.predictions?.[0]?.bytesBase64Encoded;
-
-                if (base64Data) {
-                    showImage(base64Data, `Generated image of ${name}`);
-                } else {
-                    console.error("No image data received:", result);
-                    showMessage('Leider konnte kein Bild generiert werden. Bitte versuchen Sie es mit einem anderen Namen oder Alter.');
-                }
-            } catch (error) {
-                console.error("Image API Error:", error);
-                showMessage('Fehler beim Erstellen des Bildes. Bitte versuchen Sie es später erneut.');
-            }
-        });
-
-        // Event-Listener für die Navigation
-        goToSecondPageButton.addEventListener('click', () => {
-            mainPage.classList.add('hidden');
-            secondPage.classList.remove('hidden');
-            uploadedImageContainer.classList.add('hidden'); // Versteckt das Bild beim Wechsel der Seite
-            showSecondPageMessage(''); // Löscht die Nachricht auf Seite 2
-        });
-
-        backToMainButton.addEventListener('click', () => {
-            secondPage.classList.add('hidden');
-            mainPage.classList.remove('hidden');
-        });
-
-        // Event-Listener für den Bild-Upload
+        // Bild-Upload und Bearbeitung
         imageUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -207,13 +531,12 @@
                 reader.onload = (e) => {
                     uploadedImage.src = e.target.result;
                     uploadedImageContainer.classList.remove('hidden');
-                    showSecondPageMessage(''); // Löscht die Nachricht, wenn ein Bild hochgeladen wird
+                    showSecondPageMessage('');
                 };
                 reader.readAsDataURL(file);
             }
         });
 
-        // Event-Listener für die Bildbearbeitung
         function processImage(callback) {
             if (!uploadedImage.src) {
                 showSecondPageMessage('Bitte laden Sie zuerst ein Bild hoch.');
@@ -231,12 +554,11 @@
 
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const data = imageData.data;
-
                 callback(data);
 
                 ctx.putImageData(imageData, 0, 0);
                 uploadedImage.src = canvas.toDataURL('image/png');
-                showSecondPageMessage(''); // Löscht die Nachricht, wenn die Bearbeitung abgeschlossen ist
+                showSecondPageMessage('');
             };
             img.src = uploadedImage.src;
         }
@@ -244,9 +566,9 @@
         invertColorsButton.addEventListener('click', () => {
             processImage((data) => {
                 for (let i = 0; i < data.length; i += 4) {
-                    data[i] = 255 - data[i];     // Rot
-                    data[i + 1] = 255 - data[i + 1]; // Grün
-                    data[i + 2] = 255 - data[i + 2]; // Blau
+                    data[i] = 255 - data[i];     
+                    data[i + 1] = 255 - data[i + 1]; 
+                    data[i + 2] = 255 - data[i + 2]; 
                 }
             });
         });
@@ -255,9 +577,9 @@
             processImage((data) => {
                 for (let i = 0; i < data.length; i += 4) {
                     const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                    data[i] = avg;     // Rot
-                    data[i + 1] = avg; // Grün
-                    data[i + 2] = avg; // Blau
+                    data[i] = avg;     
+                    data[i + 1] = avg; 
+                    data[i + 2] = avg; 
                 }
             });
         });
